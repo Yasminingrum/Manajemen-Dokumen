@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SecureAccess — JWT + OAuth2 + RBAC + ABAC Demo</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg: #0a0c10;
+  --surface: #111318;
+  --surface2: #181c23;
+  --border: #252a35;
+  --border2: #2e3546;
+  --text: #d4dae8;
+  --text2: #7a8499;
+  --text3: #4a5168;
+  --accent: #3b82f6;
+  --accent2: #1d4ed8;
+  --green: #22c55e;
+  --red: #ef4444;
+  --yellow: #f59e0b;
+  --purple: #a855f7;
+  --cyan: #06b6d4;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  min-height: 100vh;
+}
+
+/* ====== LAYOUT ====== */
+.shell { display: flex; height: 100vh; overflow: hidden; }
+
+.sidebar {
+  width: 240px;
+  min-width: 240px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.main { flex: 1; overflow-y: auto; background: var(--bg); }
+
+/* ====== SIDEBAR ====== */
+.logo {
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-title {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+}
+.logo-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+.user-card {
+  margin: 12px;
+  padding: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.user-card-name { font-weight: 500; font-size: 13px; color: var(--text); }
+.user-card-email { font-size: 11px; color: var(--text3); margin-top: 2px; word-break: break-all; }
+.user-card-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+
+.badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+.badge-role { background: #1e3a5f; color: #60a5fa; border: 1px solid #1d4ed8; }
+.badge-dept { background: #1a2e1a; color: #4ade80; border: 1px solid #166534; }
+.badge-clear-PUBLIC { background: #1c1c1c; color: #9ca3af; border: 1px solid #374151; }
+.badge-clear-CONFIDENTIAL { background: #1c2a1c; color: #86efac; border: 1px solid #166534; }
+.badge-clear-SECRET { background: #271a1a; color: #fca5a5; border: 1px solid #7f1d1d; }
+.badge-clear-TOP_SECRET { background: #2d1a1a; color: #f87171; border: 1px solid #991b1b; }
+
+.nav { padding: 8px; flex: 1; }
+.nav-section {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 12px 8px 6px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--text2);
+  font-size: 13px;
+  border: 1px solid transparent;
+}
+.nav-item:hover { background: var(--surface2); color: var(--text); border-color: var(--border); }
+.nav-item.active { background: #1e3a5f; color: #60a5fa; border-color: #1d4ed8; }
+.nav-icon { font-size: 14px; width: 18px; text-align: center; }
+
+.logout-btn {
+  margin: 12px;
+  padding: 9px;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: var(--sans);
+  transition: all 0.15s;
+  width: calc(100% - 24px);
+}
+.logout-btn:hover { border-color: var(--red); color: var(--red); }
+
+/* ====== AUTH SCREEN ====== */
+#auth-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--bg);
+  padding: 20px;
+}
+
+.auth-box {
+  width: 100%;
+  max-width: 420px;
+}
+
+.auth-header { text-align: center; margin-bottom: 28px; }
+.auth-logo {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+}
+.auth-logo span { color: var(--text3); }
+.auth-subtitle { font-size: 12px; color: var(--text3); margin-top: 6px; }
+
+.auth-tabs {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px 8px 0 0;
+  border-bottom: none;
+}
+.auth-tab {
+  flex: 1;
+  padding: 12px;
+  background: none;
+  border: none;
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: var(--sans);
+  transition: all 0.15s;
+  font-weight: 500;
+  border-radius: 8px 0 0 0;
+}
+.auth-tab:last-child { border-radius: 0 8px 0 0; }
+.auth-tab.active { background: var(--surface2); color: var(--text); border-bottom: 2px solid var(--accent); }
+
+.auth-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0 0 8px 8px;
+  padding: 24px;
+}
+
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; font-family: var(--mono); }
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: var(--sans);
+  transition: border-color 0.15s;
+  outline: none;
+}
+.form-input:focus { border-color: var(--accent); }
+
+.btn {
+  padding: 10px 18px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--sans);
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+.btn-primary { background: var(--accent); color: white; border-color: var(--accent2); width: 100%; }
+.btn-primary:hover { background: var(--accent2); }
+.btn-google {
+  width: 100%;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.btn-google:hover { border-color: var(--accent); color: var(--accent); }
+.btn-danger { background: none; border-color: var(--red); color: var(--red); }
+.btn-danger:hover { background: var(--red); color: white; }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+
+.divider { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--text3); font-size: 12px; }
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.demo-accounts {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px;
+  margin-top: 16px;
+}
+.demo-title { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-bottom: 10px; letter-spacing: 0.05em; }
+.demo-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
+  border-radius: 3px;
+  padding: 5px 6px;
+}
+.demo-row:last-child { border-bottom: none; }
+.demo-row:hover { background: var(--border); }
+.demo-email { font-family: var(--mono); font-size: 11px; color: var(--text2); }
+.demo-role-tag { font-family: var(--mono); font-size: 10px; padding: 1px 6px; border-radius: 3px; }
+
+/* ====== MAIN CONTENT ====== */
+.page { display: none; padding: 24px; }
+.page.active { display: block; }
+
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.page-desc { font-size: 13px; color: var(--text3); margin-bottom: 20px; }
+
+/* ====== CARDS ====== */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.card-title {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text2);
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+/* ====== GRID ====== */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+.stat-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+  text-align: center;
+}
+.stat-num { font-family: var(--mono); font-size: 28px; font-weight: 600; color: var(--accent); }
+.stat-label { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+/* ====== DOCUMENT LIST ====== */
+.doc-item {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px;
+  margin-bottom: 10px;
+  transition: border-color 0.15s;
+}
+.doc-item:hover { border-color: var(--border2); }
+.doc-item.denied { opacity: 0.4; border-style: dashed; }
+
+.doc-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.doc-title-text { font-weight: 500; color: var(--text); font-size: 14px; }
+.doc-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.doc-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+.tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+.tag-dept { background: #1a2e3a; color: var(--cyan); border: 1px solid #164e63; }
+.tag-PUBLIC { background: #1c1c2a; color: #9ca3af; border: 1px solid #374151; }
+.tag-CONFIDENTIAL { background: #1a2e1a; color: #4ade80; border: 1px solid #166534; }
+.tag-SECRET { background: #271f1a; color: #fb923c; border: 1px solid #7c2d12; }
+.tag-TOP_SECRET { background: #2d1a1a; color: #f87171; border: 1px solid #991b1b; }
+
+.denied-reason {
+  font-size: 11px;
+  color: var(--red);
+  margin-top: 6px;
+  font-family: var(--mono);
+  padding: 6px 8px;
+  background: rgba(239,68,68,0.05);
+  border-radius: 3px;
+  border: 1px solid rgba(239,68,68,0.15);
+}
+
+/* ====== RESULT BOX ====== */
+.result-box {
+  padding: 12px 14px;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin-top: 12px;
+  border: 1px solid;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.result-allowed { background: rgba(34,197,94,0.05); border-color: rgba(34,197,94,0.2); color: var(--green); }
+.result-denied { background: rgba(239,68,68,0.05); border-color: rgba(239,68,68,0.2); color: var(--red); }
+.result-info { background: rgba(59,130,246,0.05); border-color: rgba(59,130,246,0.2); color: #60a5fa; }
+
+/* ====== POLICY TABLE ====== */
+.policy-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.policy-table th {
+  background: var(--surface2);
+  color: var(--text2);
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 11px;
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.05em;
+}
+.policy-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: top; }
+.policy-table tr:last-child td { border-bottom: none; }
+.policy-table tr:hover td { background: var(--surface2); }
+
+.check { color: var(--green); }
+.cross { color: var(--red); }
+.cond { color: var(--yellow); }
+
+/* ====== LOG TABLE ====== */
+.log-row { display: grid; grid-template-columns: 140px 80px 140px 1fr 70px; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 11px; align-items: start; }
+.log-head { background: var(--surface2); font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: 0.05em; border-radius: 5px 5px 0 0; }
+.log-allowed { color: var(--green); }
+.log-denied { color: var(--red); }
+.log-time { font-family: var(--mono); color: var(--text3); }
+.log-reason { color: var(--text3); font-style: italic; }
+
+/* ====== ALERT ====== */
+.alert { padding: 10px 14px; border-radius: 5px; font-size: 12px; margin-bottom: 12px; border: 1px solid; }
+.alert-error { background: rgba(239,68,68,0.05); border-color: rgba(239,68,68,0.3); color: var(--red); }
+.alert-success { background: rgba(34,197,94,0.05); border-color: rgba(34,197,94,0.3); color: var(--green); }
+.alert-info { background: rgba(59,130,246,0.05); border-color: rgba(59,130,246,0.3); color: #60a5fa; }
+
+/* ====== MODAL ====== */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100;
+  display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  width: 100%;
+  max-width: 500px;
+  padding: 24px;
+}
+.modal-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--text); }
+
+/* ====== SCROLLBAR ====== */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+.loading { color: var(--text3); font-size: 13px; font-style: italic; padding: 20px; text-align: center; }
+.empty { color: var(--text3); font-size: 13px; padding: 20px; text-align: center; border: 1px dashed var(--border); border-radius: 6px; }
+
+.select {
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: var(--sans);
+  outline: none;
+}
+.select:focus { border-color: var(--accent); }
+
+.flex { display: flex; }
+.gap-8 { gap: 8px; }
+.gap-12 { gap: 12px; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.mt-12 { margin-top: 12px; }
+.mb-12 { margin-bottom: 12px; }
+.w-full { width: 100%; }
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-header">
+      <div class="auth-logo">SECURE<span>.</span>ACCESS</div>
+      <div class="auth-subtitle">JWT · OAuth 2.0 · RBAC · ABAC · Demo System</div>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('jwt')">🔑 JWT Login</button>
+      <button class="auth-tab" onclick="switchAuthTab('oauth')">🌐 OAuth 2.0</button>
+    </div>
+
+    <div class="auth-panel">
+      <!-- JWT TAB -->
+      <div id="tab-jwt">
+        <div id="login-alert"></div>
+        <div class="form-group">
+          <label class="form-label">EMAIL</label>
+          <input class="form-input" id="login-email" type="email" placeholder="user@company.com" value="admin@company.com"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">PASSWORD</label>
+          <input class="form-input" id="login-pass" type="password" placeholder="password" value="admin123"/>
+        </div>
+        <button class="btn btn-primary" onclick="doLogin()">Login with JWT</button>
+
+        <div class="demo-accounts" style="margin-top:16px">
+          <div class="demo-title">// DEMO ACCOUNTS — click to fill</div>
+          <div class="demo-row" onclick="fillDemo('admin@company.com','admin123')">
+            <div>
+              <div class="demo-email">admin@company.com</div>
+              <div style="font-size:11px;color:var(--text3)">Dept: IT · Clearance: TOP_SECRET</div>
+            </div>
+            <span class="badge badge-role">ADMIN</span>
+          </div>
+          <div class="demo-row" onclick="fillDemo('manager@company.com','manager123')">
+            <div>
+              <div class="demo-email">manager@company.com</div>
+              <div style="font-size:11px;color:var(--text3)">Dept: Finance · Clearance: SECRET</div>
+            </div>
+            <span class="badge badge-role">MANAGER</span>
+          </div>
+          <div class="demo-row" onclick="fillDemo('staff@company.com','staff123')">
+            <div>
+              <div class="demo-email">staff@company.com</div>
+              <div style="font-size:11px;color:var(--text3)">Dept: HR · Clearance: CONFIDENTIAL</div>
+            </div>
+            <span class="badge badge-role">STAFF</span>
+          </div>
+          <div class="demo-row" onclick="fillDemo('viewer@company.com','viewer123')">
+            <div>
+              <div class="demo-email">viewer@company.com</div>
+              <div style="font-size:11px;color:var(--text3)">Dept: Marketing · Clearance: PUBLIC</div>
+            </div>
+            <span class="badge badge-role">VIEWER</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- OAUTH TAB -->
+      <div id="tab-oauth" style="display:none">
+        <div id="oauth-alert"></div>
+        <div class="alert alert-info">
+          🔐 Login menggunakan akun Google kamu yang sesungguhnya. User baru otomatis terdaftar sebagai VIEWER.
+        </div>
+        <div style="margin-bottom:16px;font-size:12px;color:var(--text3);line-height:1.7">
+          Klik tombol di bawah → kamu akan diarahkan ke halaman login Google → setelah login, kamu akan kembali otomatis ke aplikasi ini.
+        </div>
+        <a href="/api/auth/oauth/google" class="btn btn-google" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:10px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+          Continue with Google
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div class="shell" id="app-shell" style="display:none">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="logo">
+      <div class="logo-title">SECURE.ACCESS</div>
+      <div class="logo-sub">Auth Demo System</div>
+    </div>
+    <div class="user-card" id="sidebar-user">
+      <div class="user-card-name" id="sc-name">—</div>
+      <div class="user-card-email" id="sc-email">—</div>
+      <div class="user-card-badges" id="sc-badges"></div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">// MAIN</div>
+      <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
+        <span class="nav-icon">◈</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="showPage('documents')" id="nav-documents">
+        <span class="nav-icon">▤</span> Documents
+      </div>
+      <div class="nav-section">// ACCESS CONTROL</div>
+      <div class="nav-item" onclick="showPage('policy')" id="nav-policy">
+        <span class="nav-icon">⬡</span> Access Policy
+      </div>
+      <div class="nav-item" onclick="showPage('delegation')" id="nav-delegation">
+        <span class="nav-icon">⇄</span> Role Delegation
+      </div>
+      <div class="nav-section">// ADMIN</div>
+      <div class="nav-item" onclick="showPage('users')" id="nav-users">
+        <span class="nav-icon">⊙</span> User Management
+      </div>
+      <div class="nav-item" onclick="showPage('audit')" id="nav-audit">
+        <span class="nav-icon">≡</span> Audit Log
+      </div>
+    </nav>
+    <button class="logout-btn" onclick="doLogout()">⏻ Logout</button>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div style="padding:24px">
+        <div class="page-title">Dashboard</div>
+        <div class="page-desc">Selamat datang. Akses Anda ditentukan oleh kombinasi Peran (RBAC) dan Atribut (ABAC).</div>
+
+        <div class="grid-3" style="margin-bottom:16px">
+          <div class="stat-box"><div class="stat-num" id="stat-role">—</div><div class="stat-label">Role (RBAC)</div></div>
+          <div class="stat-box"><div class="stat-num" id="stat-dept">—</div><div class="stat-label">Department (ABAC)</div></div>
+          <div class="stat-box"><div class="stat-num" id="stat-clear" style="font-size:16px">—</div><div class="stat-label">Clearance (ABAC)</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">// JWT Token (decoded payload)</div>
+          <div class="result-box result-info" id="token-display" style="font-size:11px">Loading...</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">// Hak Akses Berdasarkan Peran & Atribut Anda</div>
+          <div id="access-matrix"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DOCUMENTS -->
+    <div class="page" id="page-documents">
+      <div style="padding:24px">
+        <div class="flex justify-between items-center mb-12">
+          <div>
+            <div class="page-title">Document Management</div>
+            <div class="page-desc">Akses dokumen dikontrol oleh RBAC + ABAC (departemen & clearance)</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openCreateModal()">+ Buat Dokumen</button>
+        </div>
+
+        <div id="doc-stats" class="grid-3" style="margin-bottom:16px"></div>
+        <div id="doc-list"><div class="loading">Memuat dokumen...</div></div>
+      </div>
+    </div>
+
+    <!-- POLICY -->
+    <div class="page" id="page-policy">
+      <div style="padding:24px">
+        <div class="page-title">Access Policy</div>
+        <div class="page-desc">Daftar kebijakan akses berdasarkan kombinasi RBAC dan ABAC</div>
+
+        <div class="card">
+          <div class="card-title">// RBAC — Role Permission Matrix</div>
+          <table class="policy-table">
+            <thead>
+              <tr>
+                <th>PERMISSION</th>
+                <th>ADMIN</th>
+                <th>MANAGER</th>
+                <th>STAFF</th>
+                <th>VIEWER</th>
+                <th>ABAC REFINEMENT</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Buat Dokumen</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="cross">✗</td><td>Dokumen masuk ke dept user yang login</td></tr>
+              <tr><td>Baca Dokumen</td><td class="cond">◐</td><td class="cond">◐</td><td class="cond">◐</td><td class="cond">◐</td><td>clearance ≥ classification AND dept sesuai (atau PUBLIC)</td></tr>
+              <tr><td>Edit Dokumen</td><td class="cond">◐</td><td class="cond">◐</td><td class="cond">◐</td><td class="cross">✗</td><td>clearance ≥ classification AND dept sesuai</td></tr>
+              <tr><td>Hapus Dokumen</td><td class="cross">✗</td><td class="cond">◐</td><td class="cross">✗</td><td class="cross">✗</td><td>MANAGER: dept sesuai + clearance cukup. Keputusan manajerial.</td></tr>
+              <tr><td>Kelola Pengguna</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td>RBAC only — ADMIN exclusive</td></tr>
+              <tr><td>Role Delegation</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td>RBAC only — ADMIN exclusive</td></tr>
+              <tr><td>Audit Log</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td>RBAC only — ADMIN exclusive</td></tr>
+            </tbody>
+          </table>
+          <div style="padding:10px 12px;font-size:11px;color:var(--text3)">
+            ✓ = Selalu diizinkan &nbsp;|&nbsp; ✗ = Selalu ditolak &nbsp;|&nbsp; ◐ = Tergantung atribut ABAC
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">// ABAC — Clearance Level Hierarchy</div>
+          <table class="policy-table">
+            <thead><tr><th>LEVEL</th><th>DAPAT AKSES</th><th>DESKRIPSI</th></tr></thead>
+            <tbody>
+              <tr><td><span class="tag tag-TOP_SECRET">TOP_SECRET</span></td><td>PUBLIC, CONFIDENTIAL, SECRET, TOP_SECRET</td><td>Akses penuh ke semua klasifikasi</td></tr>
+              <tr><td><span class="tag tag-SECRET">SECRET</span></td><td>PUBLIC, CONFIDENTIAL, SECRET</td><td>Tidak dapat akses TOP_SECRET</td></tr>
+              <tr><td><span class="tag tag-CONFIDENTIAL">CONFIDENTIAL</span></td><td>PUBLIC, CONFIDENTIAL</td><td>Tidak dapat akses SECRET ke atas</td></tr>
+              <tr><td><span class="tag tag-PUBLIC">PUBLIC</span></td><td>PUBLIC only</td><td>Hanya dokumen publik</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-title">// RBAC+ABAC Combined — Contoh Keputusan</div>
+          <table class="policy-table">
+            <thead><tr><th>SKENARIO</th><th>KONDISI RBAC</th><th>KONDISI ABAC</th><th>HASIL</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Admin IT hapus dok IT</td>
+                <td>role=ADMIN ✗</td>
+                <td>—</td>
+                <td class="cross">DITOLAK — keputusan manajerial</td>
+              </tr>
+              <tr>
+                <td>Admin IT baca dok Finance</td>
+                <td>role=ADMIN ✓</td>
+                <td>dept IT ≠ dept Finance ✗</td>
+                <td class="cross">DITOLAK</td>
+              </tr>
+              <tr>
+                <td>Admin IT baca dok IT (SECRET)</td>
+                <td>role=ADMIN ✓</td>
+                <td>dept IT = dept IT ✓, clearance TOP_SECRET ≥ SECRET ✓</td>
+                <td class="check">DIIZINKAN</td>
+              </tr>
+              <tr>
+                <td>Manager Finance hapus dok Finance</td>
+                <td>role=MANAGER ✓</td>
+                <td>dept Finance = dept Finance ✓</td>
+                <td class="check">DIIZINKAN</td>
+              </tr>
+              <tr>
+                <td>Manager Finance hapus dok IT</td>
+                <td>role=MANAGER ✓</td>
+                <td>dept Finance ≠ dept IT ✗</td>
+                <td class="cross">DITOLAK</td>
+              </tr>
+              <tr>
+                <td>Staff HR baca dok Finance (SECRET)</td>
+                <td>role=STAFF ✓</td>
+                <td>dept HR ≠ dept Finance ✗</td>
+                <td class="cross">DITOLAK</td>
+              </tr>
+              <tr>
+                <td>Viewer baca dok PUBLIC</td>
+                <td>role=VIEWER ✓</td>
+                <td>classification=PUBLIC ✓</td>
+                <td class="check">DIIZINKAN</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- USER MANAGEMENT -->
+    <div class="page" id="page-users">
+      <div style="padding:24px">
+        <div class="page-title">User Management</div>
+        <div class="page-desc">ADMIN only — Kelola Role (RBAC) dan Atribut (ABAC) setiap pengguna secara terpisah</div>
+        <div id="users-result"><div class="loading">Memuat data pengguna...</div></div>
+      </div>
+    </div>
+
+    <!-- AUDIT LOG -->
+    <div class="page" id="page-audit">
+      <div style="padding:24px">
+        <div class="page-title">Audit Log</div>
+        <div class="page-desc">RBAC Only — Hanya ADMIN yang dapat melihat log akses</div>
+        <button class="btn btn-primary btn-sm mb-12" onclick="loadAudit()">↻ Refresh Log</button>
+        <div id="audit-result"><div class="loading">Memuat audit log...</div></div>
+      </div>
+    </div>
+
+    <!-- ROLE DELEGATION -->
+    <div class="page" id="page-delegation">
+      <div style="padding:24px">
+        <div class="page-title">Role Delegation</div>
+        <div class="page-desc">ADMIN only — Delegasikan akses department sementara saat seseorang tidak ada. Clearance tidak ikut didelegasikan.</div>
+
+        <div class="card">
+          <div class="card-title">// Buat Delegasi Baru</div>
+          <div id="delegation-alert"></div>
+
+          <div class="grid-2" style="margin-bottom:12px">
+            <div class="form-group">
+              <label class="form-label">DARI USER (yang sedang tidak ada)</label>
+              <select class="select w-full" id="del-from-user" onchange="updateDelegatedDepts()">
+                <option value="">— Pilih user —</option>
+              </select>
+              <div id="del-from-info" style="font-size:11px;color:var(--text3);margin-top:4px"></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">KE USER (yang menggantikan)</label>
+              <select class="select w-full" id="del-to-user" onchange="updateToUserInfo()">
+                <option value="">— Pilih user —</option>
+              </select>
+              <div id="del-to-info" style="font-size:11px;color:var(--text3);margin-top:4px"></div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">DEPARTMENT YANG DIDELEGASIKAN</label>
+            <div id="del-dept-checkboxes" style="display:flex;gap:10px;flex-wrap:wrap;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:5px">
+              <span style="font-size:12px;color:var(--text3)">Pilih user asal terlebih dahulu</span>
+            </div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">
+              Hanya department milik user asal yang bisa didelegasikan. Clearance tidak ikut didelegasikan.
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">TANGGAL MULAI</label>
+              <input class="form-input" type="date" id="del-start"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">TANGGAL SELESAI</label>
+              <input class="form-input" type="date" id="del-end"/>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">ALASAN DELEGASI</label>
+            <input class="form-input" id="del-reason" placeholder="Contoh: Manager Finance sedang cuti tahunan 3 hari"/>
+          </div>
+
+          <div id="del-preview" style="margin-bottom:12px"></div>
+          <button class="btn btn-primary btn-sm" onclick="createDelegation()">Buat Delegasi</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">// Delegasi Aktif & Riwayat</div>
+          <button class="btn btn-sm mb-12" style="border:1px solid var(--border);color:var(--text2)" onclick="loadDelegations()">↻ Refresh</button>
+          <div id="delegation-list"><div class="loading">Memuat delegasi...</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE DOC MODAL -->
+<div class="modal-overlay" id="create-modal">
+  <div class="modal">
+    <div class="modal-title">Buat Dokumen Baru</div>
+    <div id="create-alert"></div>
+    <div class="form-group">
+      <label class="form-label">JUDUL</label>
+      <input class="form-input" id="new-doc-title" placeholder="Judul dokumen"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">KONTEN</label>
+      <textarea class="form-input" id="new-doc-content" rows="4" placeholder="Isi dokumen..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">KLASIFIKASI</label>
+      <select class="select w-full" id="new-doc-class">
+        <option value="PUBLIC">PUBLIC</option>
+        <option value="CONFIDENTIAL" selected>CONFIDENTIAL</option>
+        <option value="SECRET">SECRET</option>
+        <option value="TOP_SECRET">TOP_SECRET</option>
+      </select>
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:16px">
+      Dokumen akan dibuat di departemen Anda: <span id="create-dept" style="color:var(--cyan)">—</span>
+    </div>
+    <div class="flex gap-8">
+      <button class="btn btn-primary" onclick="doCreateDoc()">Simpan</button>
+      <button class="btn" style="border:1px solid var(--border);color:var(--text2)" onclick="closeModal()">Batal</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let token = null;
+let currentUser = null;
+
+// Handle redirect dari Google OAuth — token dikirim via URL parameter
+(function handleOAuthRedirect() {
+  const params = new URLSearchParams(window.location.search);
+  const oauthToken = params.get('token');
+  const oauthStatus = params.get('oauth');
+
+  if (oauthToken && oauthStatus === 'success') {
+    // Bersihkan URL
+    window.history.replaceState({}, document.title, '/');
+    // Fetch user info lalu login
+    fetch('/api/auth/me', { headers: { Authorization: `Bearer ${oauthToken}` } })
+      .then(r => r.json())
+      .then(user => loginSuccess(oauthToken, user))
+      .catch(() => {
+        document.getElementById('oauth-alert').innerHTML =
+          `<div class="alert alert-error">✗ Gagal memuat data user setelah OAuth</div>`;
+      });
+  } else if (oauthStatus === 'failed') {
+    window.history.replaceState({}, document.title, '/');
+    // Tampilkan tab oauth dengan pesan error
+    switchAuthTab('oauth');
+    document.getElementById('oauth-alert').innerHTML =
+      `<div class="alert alert-error">✗ Google login gagal. Coba lagi.</div>`;
+  }
+})();
+
+// ============================================================
+// AUTH
+// ============================================================
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='jwt')||(i===1&&tab==='oauth')));
+  document.getElementById('tab-jwt').style.display = tab==='jwt' ? '' : 'none';
+  document.getElementById('tab-oauth').style.display = tab==='oauth' ? '' : 'none';
+}
+
+function fillDemo(email, pass) {
+  document.getElementById('login-email').value = email;
+  document.getElementById('login-pass').value = pass;
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const alertEl = document.getElementById('login-alert');
+
+  try {
+    const res = await fetch(`${API}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alertEl.innerHTML = `<div class="alert alert-error">✗ ${data.error}</div>`;
+      return;
+    }
+    loginSuccess(data.token, data.user);
+  } catch(e) {
+    alertEl.innerHTML = `<div class="alert alert-error">✗ Network error: ${e.message}</div>`;
+  }
+}
+
+
+
+
+function loginSuccess(t, user) {
+  token = t;
+  currentUser = user;
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app-shell').style.display = 'flex';
+  renderSidebar();
+  showPage('dashboard');
+}
+
+function doLogout() {
+  fetch(`${API}/api/auth/logout`, { method:'POST', headers:{ Authorization:`Bearer ${token}` } });
+  token = null; currentUser = null;
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('app-shell').style.display = 'none';
+  document.getElementById('login-alert').innerHTML = '';
+}
+
+// ============================================================
+// SIDEBAR
+// ============================================================
+function renderSidebar() {
+  const u = currentUser;
+  document.getElementById('sc-name').textContent = u.username;
+  document.getElementById('sc-email').textContent = u.email;
+  document.getElementById('sc-badges').innerHTML = `
+    <span class="badge badge-role">${u.role}</span>
+    <span class="badge badge-dept">${u.department}</span>
+    <span class="badge badge-clear-${u.clearanceLevel}">${u.clearanceLevel}</span>
+  `;
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`page-${page}`).classList.add('active');
+  document.getElementById(`nav-${page}`)?.classList.add('active');
+
+  if (page === 'dashboard') renderDashboard();
+  if (page === 'documents') loadDocuments();
+  if (page === 'users') loadUsers();
+  if (page === 'audit') loadAudit();
+  if (page === 'delegation') loadDelegations();
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard() {
+  const u = currentUser;
+  document.getElementById('stat-role').textContent = u.role;
+  document.getElementById('stat-dept').textContent = u.department;
+  document.getElementById('stat-clear').textContent = u.clearanceLevel;
+
+  // Decode JWT
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    document.getElementById('token-display').textContent = JSON.stringify(payload, null, 2);
+  } catch(e) {}
+
+  // Access matrix
+  const perms = {
+    'Buat Dokumen': u.role !== 'VIEWER',
+    'Baca Dok (dept sendiri, clearance OK)': u.role !== 'VIEWER',
+    'Edit Dokumen (dept sendiri)': u.role !== 'VIEWER',
+    'Hapus Dokumen': u.role === 'MANAGER',
+    'Kelola Pengguna & Role': u.role === 'ADMIN',
+    'Role Delegation': u.role === 'ADMIN',
+    'Audit Log': u.role === 'ADMIN',
+  };
+
+  document.getElementById('access-matrix').innerHTML = Object.entries(perms).map(([k,v]) =>
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:13px;color:var(--text2)">${k}</span>
+      <span style="font-family:var(--mono);font-size:12px;${v?'color:var(--green)':'color:var(--red)'}">${v?'✓ DIIZINKAN':'✗ DITOLAK'}</span>
+    </div>`
+  ).join('');
+}
+
+// ============================================================
+// DOCUMENTS
+// ============================================================
+async function loadDocuments() {
+  const res = await fetch(`${API}/api/documents`, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await res.json();
+
+  document.getElementById('doc-stats').innerHTML = `
+    <div class="stat-box"><div class="stat-num" style="font-size:24px">${data.stats.total}</div><div class="stat-label">Total Dokumen</div></div>
+    <div class="stat-box"><div class="stat-num" style="font-size:24px;color:var(--green)">${data.stats.accessible}</div><div class="stat-label">Dapat Diakses</div></div>
+    <div class="stat-box"><div class="stat-num" style="font-size:24px;color:var(--red)">${data.stats.denied}</div><div class="stat-label">Ditolak</div></div>
+  `;
+
+  let html = '';
+
+  if (data.accessible.length) {
+    html += `<div style="font-family:var(--mono);font-size:11px;color:var(--green);margin-bottom:8px;letter-spacing:0.05em">// DAPAT DIAKSES (${data.accessible.length})</div>`;
+    data.accessible.forEach(doc => {
+      html += `<div class="doc-item">
+        <div class="doc-header">
+          <div style="flex:1">
+            <div class="doc-title-text">${doc.title}</div>
+            <div class="doc-meta">
+              <span class="tag tag-dept">${doc.department}</span>
+              <span class="tag tag-${doc.classification}">${doc.classification}</span>
+              <span style="font-size:11px;color:var(--text3)">oleh ${doc.ownerName} · ${doc.createdAt}</span>
+            </div>
+            <div style="font-size:12px;color:var(--text3);margin-top:6px">${doc.content.substring(0,120)}...</div>
+          </div>
+          <div class="doc-actions">
+            <button class="btn btn-sm" style="border:1px solid var(--border);color:var(--text2)" onclick="editDoc('${doc.id}','${doc.title}')">Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteDoc('${doc.id}','${doc.title}')">Hapus</button>
+          </div>
+        </div>
+      </div>`;
+    });
+  }
+
+  if (data.denied.length) {
+    html += `<div style="font-family:var(--mono);font-size:11px;color:var(--red);margin:12px 0 8px;letter-spacing:0.05em">// DITOLAK (${data.denied.length}) — akses diblokir</div>`;
+    data.denied.forEach(doc => {
+      html += `<div class="doc-item denied">
+        <div class="doc-title-text" style="color:var(--text3)">🔒 ${doc.title}</div>
+        <div class="denied-reason">✗ ${doc.reason}</div>
+      </div>`;
+    });
+  }
+
+  document.getElementById('doc-list').innerHTML = html || '<div class="empty">Tidak ada dokumen</div>';
+}
+
+async function deleteDoc(id, title) {
+  if (!confirm(`Hapus dokumen "${title}"?`)) return;
+  const res = await fetch(`${API}/api/documents/${id}`, { method:'DELETE', headers:{ Authorization:`Bearer ${token}` } });
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(`✗ DITOLAK\n\nAlasan: ${data.reason}\n\nPolicy: ${data.policy||''}`);
+  } else {
+    alert(`✓ DIIZINKAN\n\nDokumen dihapus.\nAlasan: ${data.accessReason}`);
+    loadDocuments();
+  }
+}
+
+async function editDoc(id, title) {
+  const content = prompt(`Edit konten dokumen "${title}":`, 'Konten baru...');
+  if (!content) return;
+
+  const res = await fetch(`${API}/api/documents/${id}`, {
+    method:'PUT',
+    headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json' },
+    body: JSON.stringify({ content }),
+  });
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(`✗ DITOLAK\n\nAlasan: ${data.reason}\n\nPolicy: ${data.policy||''}`);
+  } else {
+    alert(`✓ DIIZINKAN\n\nDokumen diperbarui.\nAlasan: ${data.accessReason}`);
+    loadDocuments();
+  }
+}
+
+function openCreateModal() {
+  document.getElementById('create-dept').textContent = currentUser.department;
+  document.getElementById('create-modal').classList.add('open');
+}
+function closeModal() { document.getElementById('create-modal').classList.remove('open'); }
+
+async function doCreateDoc() {
+  const title = document.getElementById('new-doc-title').value.trim();
+  const content = document.getElementById('new-doc-content').value.trim();
+  const classification = document.getElementById('new-doc-class').value;
+  const alertEl = document.getElementById('create-alert');
+
+  if (!title || !content) { alertEl.innerHTML = `<div class="alert alert-error">✗ Judul dan konten wajib diisi</div>`; return; }
+
+  const res = await fetch(`${API}/api/documents`, {
+    method:'POST',
+    headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json' },
+    body: JSON.stringify({ title, content, classification }),
+  });
+  const data = await res.json();
+
+  if (!res.ok) {
+    alertEl.innerHTML = `<div class="alert alert-error">✗ ${data.reason}</div>`;
+  } else {
+    closeModal();
+    loadDocuments();
+  }
+}
+
+// ============================================================
+// SENSITIVE DATA
+// ============================================================
+async function loadSensitive() {
+  const res = await fetch(`${API}/api/reports/sensitive`, { headers:{ Authorization:`Bearer ${token}` } });
+  const data = await res.json();
+  const el = document.getElementById('sensitive-result');
+
+  if (!res.ok) {
+    el.innerHTML = `<div class="result-box result-denied">✗ AKSES DITOLAK\n\nAlasan: ${data.reason}\n\nPolicy: ${data.policy}</div>`;
+  } else {
+    el.innerHTML = `<div class="result-box result-allowed">✓ AKSES DIIZINKAN\nAlasan: ${data.accessReason}\n\n${JSON.stringify(data.report, null, 2)}</div>`;
+  }
+}
+
+async function loadDeptReport() {
+  const res = await fetch(`${API}/api/reports/department`, { headers:{ Authorization:`Bearer ${token}` } });
+  const data = await res.json();
+  const el = document.getElementById('dept-result');
+
+  if (!res.ok) {
+    el.innerHTML = `<div class="result-box result-denied">✗ AKSES DITOLAK\n\nAlasan: ${data.reason}</div>`;
+  } else {
+    el.innerHTML = `<div class="result-box result-allowed">✓ AKSES DIIZINKAN\nAlasan: ${data.accessReason}\n\n${JSON.stringify(data.report, null, 2)}</div>`;
+  }
+}
+
+// ============================================================
+// USER MANAGEMENT
+// ============================================================
+async function loadUsers() {
+  const res = await fetch(`${API}/api/users`, { headers:{ Authorization:`Bearer ${token}` } });
+  const data = await res.json();
+  const el = document.getElementById('users-result');
+
+  if (!res.ok) {
+    el.innerHTML = `<div class="result-box result-denied" style="margin:0">✗ AKSES DITOLAK\n\nAlasan: ${data.reason}</div>`;
+    return;
+  }
+
+  const allDepts = ['IT', 'Finance', 'HR', 'General', 'Marketing'];
+  const allClearance = ['PUBLIC', 'CONFIDENTIAL', 'SECRET', 'TOP_SECRET'];
+  const allRoles = ['ADMIN', 'MANAGER', 'STAFF', 'VIEWER'];
+
+  el.innerHTML = data.users.map(u => `
+    <div class="doc-item" style="margin-bottom:12px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+
+        <!-- Info user -->
+        <div style="min-width:200px">
+          <div class="doc-title-text">${u.username}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${u.email}</div>
+          <div class="doc-meta" style="margin-top:6px">
+            <span class="badge badge-role">${u.role}</span>
+            ${(u.departments||[]).map(d=>`<span class="badge badge-dept">${d}</span>`).join('')}
+            <span class="badge badge-clear-${u.clearanceLevel}">${u.clearanceLevel}</span>
+          </div>
+        </div>
+
+        <!-- RBAC: Ganti Role -->
+        <div style="min-width:160px">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:6px;letter-spacing:0.05em">RBAC — ROLE</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <select class="select" id="role-${u.id}" style="font-size:11px;padding:4px 8px">
+              ${allRoles.map(r => `<option value="${r}" ${r===u.role?'selected':''}>${r}</option>`).join('')}
+            </select>
+            <button class="btn btn-sm" style="border:1px solid var(--accent);color:var(--accent)"
+              onclick="changeRole('${u.id}')">Ubah</button>
+          </div>
+        </div>
+
+        <!-- ABAC: Departments -->
+        <div style="min-width:200px">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:6px;letter-spacing:0.05em">ABAC — DEPARTMENTS</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px">
+            ${allDepts.map(d => `
+              <label style="display:flex;align-items:center;gap:3px;font-size:11px;cursor:pointer;color:var(--text2)">
+                <input type="checkbox" id="dept-${u.id}-${d}" ${(u.departments||[]).includes(d)?'checked':''}
+                  style="accent-color:var(--accent)"> ${d}
+              </label>`).join('')}
+          </div>
+          <button class="btn btn-sm" style="border:1px solid var(--green);color:var(--green)"
+            onclick="changeAbac('${u.id}', 'dept')">Simpan Dept</button>
+        </div>
+
+        <!-- ABAC: Clearance -->
+        <div style="min-width:160px">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:6px;letter-spacing:0.05em">ABAC — CLEARANCE</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <select class="select" id="clearance-${u.id}" style="font-size:11px;padding:4px 8px">
+              ${allClearance.map(c => `<option value="${c}" ${c===u.clearanceLevel?'selected':''}>${c}</option>`).join('')}
+            </select>
+            <button class="btn btn-sm" style="border:1px solid var(--purple);color:var(--purple)"
+              onclick="changeAbac('${u.id}', 'clearance')">Ubah</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `).join('');
+}
+
+async function changeRole(userId) {
+  const role = document.getElementById(`role-${userId}`).value;
+  if (!role) return;
+  const res = await fetch(`${API}/api/users/${userId}/role`, {
+    method:'PATCH',
+    headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json' },
+    body: JSON.stringify({ role }),
+  });
+  const data = await res.json();
+  if (res.ok) { alert(`✓ ${data.message}`); loadUsers(); }
+  else { alert(`✗ Gagal: ${data.error}`); }
+}
+
+async function changeAbac(userId, type) {
+  let body = {};
+
+  if (type === 'dept') {
+    const allDepts = ['IT', 'Finance', 'HR', 'General', 'Marketing'];
+    const selected = allDepts.filter(d => document.getElementById(`dept-${userId}-${d}`)?.checked);
+    if (selected.length === 0) { alert('Pilih minimal satu department'); return; }
+    body = { departments: selected };
+  } else if (type === 'clearance') {
+    body = { clearanceLevel: document.getElementById(`clearance-${userId}`).value };
+  }
+
+  const res = await fetch(`${API}/api/users/${userId}/abac`, {
+    method:'PATCH',
+    headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (res.ok) { alert(`✓ ${data.message}`); loadUsers(); }
+  else { alert(`✗ Gagal: ${data.error}`); }
+}
+
+// ============================================================
+// AUDIT LOG
+// ============================================================
+async function loadAudit() {
+  const res = await fetch(`${API}/api/users/audit-log`, { headers:{ Authorization:`Bearer ${token}` } });
+  const data = await res.json();
+  const el = document.getElementById('audit-result');
+
+  if (!res.ok) {
+    el.innerHTML = `<div class="result-box result-denied" style="margin:0">✗ AKSES DITOLAK\n\nAlasan: ${data.reason}</div>`;
+    return;
+  }
+
+  const header = `<div class="log-row log-head"><div>TIMESTAMP</div><div>USER</div><div>ACTION</div><div>RESOURCE</div><div>RESULT</div></div>`;
+  const rows = data.logs.map(log => `
+    <div class="log-row">
+      <div class="log-time">${log.timestamp.replace('T',' ').split('.')[0]}</div>
+      <div style="color:var(--text2);font-family:var(--mono)">${log.username}</div>
+      <div style="font-family:var(--mono);color:var(--cyan)">${log.action}</div>
+      <div style="color:var(--text3);font-size:10px">${log.resource}<br><span class="log-reason">${log.reason}</span></div>
+      <div class="${log.result==='ALLOWED'?'log-allowed':'log-denied'};font-family:var(--mono);font-weight:600">${log.result}</div>
+    </div>
+  `).join('');
+
+  el.innerHTML = `<div style="border:1px solid var(--border);border-radius:6px;overflow:hidden">${header}${rows||'<div class="empty">Belum ada log</div>'}</div>`;
+}
+
+// ============================================================
+// ABAC SIMULATOR
+// ============================================================
+async function runSimulation() {
+  const userAttrs = {
+    role: document.getElementById('sim-role').value,
+    department: document.getElementById('sim-dept').value,
+    clearanceLevel: document.getElementById('sim-clearance').value,
+  };
+  const resourceAttrs = {
+    department: document.getElementById('sim-doc-dept').value,
+    classification: document.getElementById('sim-doc-class').value,
+  };
+  const action = document.getElementById('sim-action').value;
+
+  const res = await fetch(`${API}/api/abac/simulate`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userAttrs, resourceAttrs, action }),
+  });
+  const data = await res.json();
+
+  const resultClass = data.result.allowed ? 'result-allowed' : 'result-denied';
+  const resultLabel = data.result.allowed
+    ? '✓ DIIZINKAN (ALLOWED)'
+    : '✗ DITOLAK (DENIED)';
+
+  const stepsHtml = data.steps.map(s => `
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <span style="font-family:var(--mono);font-size:11px;color:${s.passed?'var(--green)':'var(--red)'};flex-shrink:0;width:16px">${s.passed?'✓':'✗'}</span>
+      <div>
+        <div style="font-size:12px;font-weight:500;color:var(--text)">${s.label}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;font-family:var(--mono)">${s.detail}</div>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('sim-result').innerHTML = `
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">// Hasil Evaluasi</div>
+      <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+        <span class="badge badge-role">${userAttrs.role}</span>
+        <span class="badge badge-dept">${userAttrs.department}</span>
+        <span class="badge badge-clear-${userAttrs.clearanceLevel}">${userAttrs.clearanceLevel}</span>
+        <span style="color:var(--text3);font-size:12px">→ ${action} →</span>
+        <span class="tag tag-dept">${resourceAttrs.department}</span>
+        <span class="tag tag-${resourceAttrs.classification}">${resourceAttrs.classification}</span>
+      </div>
+      <div style="font-family:var(--mono);font-size:16px;font-weight:600;color:${data.result.allowed?'var(--green)':'var(--red)'};margin-bottom:16px">
+        ${resultLabel}
+      </div>
+      <div class="card-title">// Langkah Evaluasi</div>
+      ${stepsHtml}
+    </div>
+  `;
+}
+
+// ============================================================
+// ROLE DELEGATION
+// ============================================================
+let allUsersCache = [];
+
+async function loadDelegations() {
+  if (currentUser.role !== 'ADMIN') {
+    document.getElementById('delegation-list').innerHTML =
+      `<div class="result-box result-denied" style="margin:0">✗ AKSES DITOLAK\n\nAlasan: Role ${currentUser.role} tidak diizinkan.\nHanya ADMIN yang dapat mengelola delegasi.</div>`;
+    document.getElementById('delegation-alert').innerHTML =
+      `<div class="alert alert-error">✗ Fitur ini hanya untuk ADMIN</div>`;
+    ['del-from-user','del-to-user','del-reason','del-start','del-end'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = true;
+    });
+    return;
+  }
+
+  // Load users untuk dropdown
+  const usersRes = await fetch(`${API}/api/users`, { headers: { Authorization: `Bearer ${token}` } });
+  if (usersRes.ok) {
+    const usersData = await usersRes.json();
+    allUsersCache = usersData.users;
+    const opts = '<option value="">— Pilih user —</option>' +
+      usersData.users.map(u =>
+        `<option value="${u.id}" data-dept="${u.department}" data-role="${u.role}" data-clearance="${u.clearanceLevel}">
+          ${u.username} (${u.role} · ${u.department} · ${u.clearanceLevel})
+        </option>`
+      ).join('');
+    document.getElementById('del-from-user').innerHTML = opts;
+    document.getElementById('del-to-user').innerHTML = opts;
+  }
+
+  // Default tanggal
+  const today = new Date().toISOString().split('T')[0];
+  const nextWeek = new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0];
+  if (!document.getElementById('del-start').value) document.getElementById('del-start').value = today;
+  if (!document.getElementById('del-end').value) document.getElementById('del-end').value = nextWeek;
+
+  // Load daftar delegasi
+  const res = await fetch(`${API}/api/delegation`, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await res.json();
+  const el = document.getElementById('delegation-list');
+
+  if (!data.delegations || data.delegations.length === 0) {
+    el.innerHTML = '<div class="empty">Belum ada delegasi</div>';
+    return;
+  }
+
+  el.innerHTML = data.delegations.map(d => {
+    const statusColor = {aktif:'var(--green)', dicabut:'var(--red)', belum_mulai:'var(--yellow)', kadaluarsa:'var(--text3)'}[d.status] || 'var(--text3)';
+    return `
+    <div class="doc-item">
+      <div class="doc-header">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:500">
+            <span style="color:var(--text2)">${d.fromUsername}</span>
+            <span style="color:var(--text3);font-size:11px"> mendelegasikan ke </span>
+            <span style="color:var(--accent)">${d.toUsername}</span>
+          </div>
+          <div class="doc-meta" style="margin-top:6px">
+            <span class="badge badge-dept">+${d.delegatedDept}</span>
+            <span style="font-size:11px;color:var(--text3);font-style:italic">clearance tidak didelegasikan</span>
+            <span style="font-size:11px;color:${statusColor};font-family:var(--mono)">● ${d.status.toUpperCase()}</span>
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">
+            📅 ${d.startDate} s/d ${d.endDate} &nbsp;|&nbsp; 📝 ${d.reason}
+          </div>
+        </div>
+        ${d.status === 'aktif' ? `
+          <button class="btn btn-sm btn-danger" onclick="revokeDelegation('${d.id}')">Cabut</button>
+        ` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateDelegatedDepts() {
+  const sel = document.getElementById('del-from-user');
+  const opt = sel.options[sel.selectedIndex];
+  const box = document.getElementById('del-dept-checkboxes');
+  const info = document.getElementById('del-from-info');
+
+  if (!opt.value) {
+    box.innerHTML = '<span style="font-size:12px;color:var(--text3)">Pilih user asal terlebih dahulu</span>';
+    info.textContent = '';
+    updateDelegationPreview();
+    return;
+  }
+
+  const dept = opt.dataset.dept;
+  const role = opt.dataset.role;
+  const clearance = opt.dataset.clearance;
+  info.innerHTML = `<span class="badge badge-role" style="font-size:10px">${role}</span> <span class="badge badge-clear-${clearance}" style="font-size:10px">${clearance}</span>`;
+
+  // Satu user = satu department asli yang bisa didelegasikan
+  box.innerHTML = `
+    <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;
+      padding:5px 10px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text2)">
+      <input type="checkbox" name="del-dept" value="${dept}" checked style="accent-color:var(--accent)"> ${dept}
+    </label>`;
+
+  box.querySelectorAll('input').forEach(cb => cb.addEventListener('change', updateDelegationPreview));
+  updateDelegationPreview();
+}
+
+function updateToUserInfo() {
+  const sel = document.getElementById('del-to-user');
+  const opt = sel.options[sel.selectedIndex];
+  const info = document.getElementById('del-to-info');
+
+  if (!opt.value) { info.textContent = ''; return; }
+
+  const dept = opt.dataset.dept;
+  const role = opt.dataset.role;
+  const clearance = opt.dataset.clearance;
+  info.innerHTML = `<span class="badge badge-role" style="font-size:10px">${role}</span> `
+    + `<span class="badge badge-dept" style="font-size:10px">${dept}</span>`
+    + ` <span class="badge badge-clear-${clearance}" style="font-size:10px">${clearance}</span>`;
+  updateDelegationPreview();
+}
+
+function updateDelegationPreview() {
+  const fromSel = document.getElementById('del-from-user');
+  const toSel = document.getElementById('del-to-user');
+  const preview = document.getElementById('del-preview');
+
+  const fromOpt = fromSel.options[fromSel.selectedIndex];
+  const toOpt = toSel.options[toSel.selectedIndex];
+  const checked = [...document.querySelectorAll('input[name="del-dept"]:checked')].map(c => c.value);
+
+  if (!fromOpt?.value || !toOpt?.value || !checked.length) {
+    preview.innerHTML = '';
+    return;
+  }
+
+  const toDept = toOpt.dataset.dept;
+  const toClearance = toOpt.dataset.clearance;
+  const toName = toOpt.text.split(' ')[0];
+  const allDepts = [...new Set([toDept, ...checked])];
+
+  preview.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:12px;font-size:12px">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:8px;letter-spacing:0.05em">// PREVIEW EFEK DELEGASI</div>
+      <div style="color:var(--text2)"><strong style="color:var(--accent)">${toName}</strong> setelah delegasi aktif:</div>
+      <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:11px;color:var(--text3)">Dept:</span>
+        <span class="badge badge-dept">${toDept}</span>
+        <span style="color:var(--text3)">+</span>
+        ${checked.map(d=>`<span class="badge badge-dept" style="border-color:var(--yellow);color:var(--yellow)">+${d} (delegasi)</span>`).join('')}
+      </div>
+      <div style="margin-top:6px;display:flex;gap:6px;align-items:center">
+        <span style="font-size:11px;color:var(--text3)">Clearance:</span>
+        <span class="badge badge-clear-${toClearance}">${toClearance}</span>
+        <span style="font-size:11px;color:var(--text3);font-style:italic">(tidak berubah — hanya pekerjaan harian)</span>
+      </div>
+    </div>`;
+}
+
+async function createDelegation() {
+  if (currentUser.role !== 'ADMIN') {
+    document.getElementById('delegation-alert').innerHTML =
+      `<div class="alert alert-error">✗ Hanya ADMIN yang dapat membuat delegasi</div>`;
+    return;
+  }
+
+  const fromUserId = document.getElementById('del-from-user').value;
+  const toUserId = document.getElementById('del-to-user').value;
+  const checkedDepts = [...document.querySelectorAll('input[name="del-dept"]:checked')].map(c => c.value);
+  const startDate = document.getElementById('del-start').value;
+  const endDate = document.getElementById('del-end').value;
+  const reason = document.getElementById('del-reason').value.trim();
+  const alertEl = document.getElementById('delegation-alert');
+
+  if (!fromUserId || !toUserId || !checkedDepts.length || !startDate || !endDate || !reason) {
+    alertEl.innerHTML = `<div class="alert alert-error">✗ Semua field wajib diisi dan pilih minimal satu department</div>`;
+    return;
+  }
+  if (fromUserId === toUserId) {
+    alertEl.innerHTML = `<div class="alert alert-error">✗ User asal dan tujuan tidak boleh sama</div>`;
+    return;
+  }
+
+  // Kirim satu request per department yang dipilih
+  let successCount = 0;
+  let lastError = '';
+  for (const dept of checkedDepts) {
+    const res = await fetch(`${API}/api/delegation`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fromUserId, toUserId, delegatedDept: dept, startDate, endDate, reason }),
+    });
+    const data = await res.json();
+    if (res.ok) successCount++;
+    else lastError = data.error;
+  }
+
+  if (successCount > 0) {
+    alertEl.innerHTML = `<div class="alert alert-success">✓ ${successCount} delegasi department berhasil dibuat</div>`;
+    loadDelegations();
+  } else {
+    alertEl.innerHTML = `<div class="alert alert-error">✗ ${lastError}</div>`;
+  }
+}
+
+async function revokeDelegation(id) {
+  if (!confirm('Cabut delegasi ini?')) return;
+  const res = await fetch(`${API}/api/delegation/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (res.ok) {
+    document.getElementById('delegation-alert').innerHTML =
+      `<div class="alert alert-success">✓ ${data.message}</div>`;
+    loadDelegations();
+  }
+}
+</script>
+</body>
+</html>
