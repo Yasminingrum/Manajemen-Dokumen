@@ -1,6 +1,5 @@
 # ACCESS POLICY DOCUMENT
 ## Manajemen Dokumen — Sistem Otorisasi RBAC + ABAC
-### Universitas Ciputra — Tugas Keamanan Informasi
 
 ---
 

@@ -5,7 +5,7 @@
 
 ## Informasi Aplikasi
 
-Manajemen Dokumen adalah aplikasi REST API berbasis web yang mendemonstrasikan implementasi sistem autentikasi dan otorisasi berlapis. Aplikasi ini dibangun sebagai tugas mata kuliah Keamanan Informasi di Universitas Ciputra.
+Manajemen Dokumen adalah aplikasi REST API berbasis web yang mendemonstrasikan implementasi sistem autentikasi dan otorisasi berlapis.
 
 | | |
 |---|---|
@@ -197,5 +197,3 @@ Efek:
 | DELETE | `/api/delegation/:id` | ADMIN | Cabut delegasi |
 
 ---
-
-*Manajemen Dokumen — Tugas Keamanan Informasi, Universitas Ciputra*

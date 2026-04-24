@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = 'ciputra-university-secret-key-2024-auth-system';
+const JWT_SECRET = 'secret-key-2026-auth-system';
 const JWT_EXPIRES_IN = '8h';
 
 function generateToken(user) {
