@@ -1,0 +1,142 @@
+{
+  "users": [
+    {
+      "id": "u001",
+      "username": "admin",
+      "email": "admin@company.com",
+      "password": "$2b$10$.AL.4tEuzxt0AlHo.KU.nOYa.DM.a5e0ynrAekSgxgDdWzb8KMFWy",
+      "role": "ADMIN",
+      "department": "IT",
+      "clearanceLevel": "TOP_SECRET",
+      "isActive": true,
+      "createdAt": "2024-01-01"
+    },
+    {
+      "id": "u002",
+      "username": "manager_finance",
+      "email": "manager@company.com",
+      "password": "$2b$10$2wQeu4F8bL/h7xMrbT2gi.AlWAdOi9l9zrxla.lfZjK3e.RT1Ufeq",
+      "role": "MANAGER",
+      "department": "Finance",
+      "clearanceLevel": "SECRET",
+      "isActive": true,
+      "createdAt": "2024-01-15"
+    },
+    {
+      "id": "u003",
+      "username": "staff_hr",
+      "email": "staff@company.com",
+      "password": "$2b$10$pAPbF43VhOqJyvyfePbXq.hKYIbzHRuw/gOFNkLuotjUyTl4kOPBe",
+      "role": "STAFF",
+      "department": "HR",
+      "clearanceLevel": "CONFIDENTIAL",
+      "isActive": true,
+      "createdAt": "2024-02-01"
+    },
+    {
+      "id": "u004",
+      "username": "viewer",
+      "email": "viewer@company.com",
+      "password": "$2b$10$tlRFOfiyOh2/6JVAk7Nxze2zl1YTzemH7BUBH37C2ytxS5IPrUPPG",
+      "role": "VIEWER",
+      "department": "General",
+      "clearanceLevel": "PUBLIC",
+      "isActive": true,
+      "createdAt": "2024-02-10",
+      "departments": [
+        "General"
+      ]
+    },
+    {
+      "id": "u005",
+      "username": "manager_it",
+      "email": "manager.it@company.com",
+      "password": "$2b$10$/1/E5.UiS4JVR.ZdgvLMJOCzE0zFPOkuQP84KRRQBYpT.F0pz8E/q",
+      "role": "MANAGER",
+      "department": "IT",
+      "clearanceLevel": "SECRET",
+      "isActive": true,
+      "createdAt": "2024-03-01"
+    },
+    {
+      "id": "u006",
+      "username": "staff_it",
+      "email": "staff.it@company.com",
+      "password": "$2b$10$1p9g0uCRfGwso4m/1sglluySAWRQ96M471IWSSJQ7RcUWJXt88f3i",
+      "role": "STAFF",
+      "department": "IT",
+      "clearanceLevel": "CONFIDENTIAL",
+      "isActive": true,
+      "createdAt": "2024-03-10"
+    }
+  ],
+  "documents": [
+    {
+      "id": "d001",
+      "title": "IT Infrastructure Plan 2024",
+      "content": "Detailed plan for upgrading company IT infrastructure including servers, network, and security systems.",
+      "department": "IT",
+      "classification": "TOP_SECRET",
+      "ownerId": "u001",
+      "ownerName": "admin",
+      "createdAt": "2024-01-10",
+      "updatedAt": "2024-01-10"
+    },
+    {
+      "id": "d002",
+      "title": "Q4 Financial Report",
+      "content": "Quarterly financial performance report including revenue, expenses, profit margins, and forecasts.",
+      "department": "Finance",
+      "classification": "SECRET",
+      "ownerId": "u002",
+      "ownerName": "manager_finance",
+      "createdAt": "2024-02-01",
+      "updatedAt": "2024-02-01"
+    },
+    {
+      "id": "d003",
+      "title": "Employee Onboarding Guide",
+      "content": "Standard onboarding process and procedures for new employees joining the company.",
+      "department": "HR",
+      "classification": "CONFIDENTIAL",
+      "ownerId": "u003",
+      "ownerName": "staff_hr",
+      "createdAt": "2024-02-15",
+      "updatedAt": "2024-02-15"
+    },
+    {
+      "id": "d004",
+      "title": "Marketing Campaign Brief",
+      "content": "Overview of the upcoming Q1 marketing campaign including target audience, channels, and budget.",
+      "department": "General",
+      "classification": "PUBLIC",
+      "ownerId": "u004",
+      "ownerName": "viewer",
+      "createdAt": "2024-03-01",
+      "updatedAt": "2024-03-01"
+    },
+    {
+      "id": "d005",
+      "title": "Salary Structure & Compensation",
+      "content": "Detailed breakdown of salary bands, compensation packages, and bonus structures for all levels.",
+      "department": "Finance",
+      "classification": "TOP_SECRET",
+      "ownerId": "u002",
+      "ownerName": "manager_finance",
+      "createdAt": "2024-03-10",
+      "updatedAt": "2024-03-10"
+    },
+    {
+      "id": "d006",
+      "title": "Security Audit Report",
+      "content": "Results of the annual security audit including vulnerabilities found, risk assessment, and remediation plan.",
+      "department": "IT",
+      "classification": "SECRET",
+      "ownerId": "u001",
+      "ownerName": "admin",
+      "createdAt": "2024-03-15",
+      "updatedAt": "2024-03-15"
+    }
+  ],
+  "delegations": []
+}

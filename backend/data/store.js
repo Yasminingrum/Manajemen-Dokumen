@@ -1,6 +1,14 @@
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
+const path = require('path');
 
-const users = [
+// ============================================================
+// PERSISTENSI — db.json
+// Data disimpan ke file sehingga tidak hilang saat server restart
+// ============================================================
+const DB_PATH = path.join(__dirname, 'db.json');
+
+const DEFAULT_USERS = [
   {
     id: 'u001',
     username: 'admin',
@@ -69,7 +77,7 @@ const users = [
   },
 ];
 
-let documents = [
+const DEFAULT_DOCUMENTS = [
   {
     id: 'd001',
     title: 'IT Infrastructure Plan 2024',
@@ -138,11 +146,56 @@ let documents = [
   },
 ];
 
-// delegasi sementara — hanya department yang didelegasikan, bukan clearance
-const delegations = [];
+// ============================================================
+// Load dari db.json, atau buat baru jika belum ada
+// ============================================================
+function loadDB() {
+  try {
+    if (fs.existsSync(DB_PATH)) {
+      const raw = fs.readFileSync(DB_PATH, 'utf8');
+      const db = JSON.parse(raw);
+      // Pastikan semua field ada (untuk migrasi dari versi lama)
+      return {
+        users: db.users || DEFAULT_USERS,
+        documents: db.documents || DEFAULT_DOCUMENTS,
+        delegations: db.delegations || [],
+      };
+    }
+  } catch (e) {
+    console.warn('[store] Gagal load db.json, pakai data default:', e.message);
+  }
+  return {
+    users: DEFAULT_USERS,
+    documents: DEFAULT_DOCUMENTS,
+    delegations: [],
+  };
+}
 
-const accessLogs = [];
+// ============================================================
+// Simpan ke db.json — dipanggil setiap ada perubahan data
+// Password di-exclude dari log tapi tetap disimpan (bcrypt hash)
+// ============================================================
+function saveDB() {
+  try {
+    const data = JSON.stringify({ users, documents, delegations }, null, 2);
+    fs.writeFileSync(DB_PATH, data, 'utf8');
+  } catch (e) {
+    console.error('[store] Gagal menyimpan db.json:', e.message);
+  }
+}
 
+// Load data saat modul diinisialisasi
+const db = loadDB();
+const users = db.users;
+let documents = db.documents;
+const delegations = db.delegations;
+const accessLogs = []; // log tidak perlu persisten
+
+console.log(`[store] Data loaded: ${users.length} users, ${documents.length} dokumen, ${delegations.length} delegasi`);
+
+// ============================================================
+// addLog — audit log (in-memory saja, tidak perlu disimpan)
+// ============================================================
 function addLog(userId, username, action, resource, result, reason = '') {
   accessLogs.push({
     id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
@@ -164,7 +217,6 @@ function addLog(userId, username, action, resource, result, reason = '') {
 function getEffectiveUser(user) {
   const now = new Date();
 
-  // Kumpulkan semua delegasi aktif yang diterima user ini
   const activeDelegations = delegations.filter(d =>
     d.toUserId === user.id &&
     d.isActive &&
@@ -172,23 +224,28 @@ function getEffectiveUser(user) {
     new Date(d.endDate) >= now
   );
 
+  // Gunakan user.departments jika sudah ada (hasil edit ABAC),
+  // fallback ke [user.department] untuk backward compatibility
+  const baseDepts = (user.departments && user.departments.length > 0)
+    ? user.departments
+    : [user.department];
+
   if (activeDelegations.length === 0) {
     return {
       ...user,
-      departments: [user.department], // selalu array
+      departments: baseDepts,
       isDelegated: false,
       activeDelegations: [],
     };
   }
 
-  // Kumpulkan semua department tambahan dari delegasi aktif
   const extraDepts = activeDelegations.map(d => d.delegatedDept).filter(Boolean);
-  const allDepts = [...new Set([user.department, ...extraDepts])];
+  const allDepts = [...new Set([...baseDepts, ...extraDepts])];
 
   return {
     ...user,
-    departments: allDepts,       // ABAC additive — array
-    clearanceLevel: user.clearanceLevel, // clearance TIDAK berubah
+    departments: allDepts,
+    clearanceLevel: user.clearanceLevel,
     isDelegated: true,
     activeDelegations: activeDelegations.map(d => ({
       id: d.id,
@@ -201,4 +258,4 @@ function getEffectiveUser(user) {
   };
 }
 
-module.exports = { users, documents, delegations, accessLogs, addLog, getEffectiveUser };
+module.exports = { users, documents, delegations, accessLogs, addLog, getEffectiveUser, saveDB };

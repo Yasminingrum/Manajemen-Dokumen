@@ -892,12 +892,21 @@ async function doLogin() {
   }
 }
 
-
-
-
-function loginSuccess(t, user) {
+async function loginSuccess(t, user) {
   token = t;
   currentUser = user;
+  // Refresh token agar selalu pakai data terbaru dari database
+  try {
+    const res = await fetch(`${API}/api/auth/refresh`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      token = data.token;
+      currentUser = data.user;
+    }
+  } catch(e) { /* pakai token lama jika refresh gagal */ }
+
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app-shell').style.display = 'flex';
   renderSidebar();
@@ -1165,7 +1174,7 @@ async function loadUsers() {
           <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px">
             ${allDepts.map(d => `
               <label style="display:flex;align-items:center;gap:3px;font-size:11px;cursor:pointer;color:var(--text2)">
-                <input type="checkbox" id="dept-${u.id}-${d}" ${(u.departments||[]).includes(d)?'checked':''}
+                <input type="checkbox" id="dept-${u.id}-${d}" ${(u.departments || [u.department]).includes(d)?'checked':''}
                   style="accent-color:var(--accent)"> ${d}
               </label>`).join('')}
           </div>
@@ -1199,13 +1208,18 @@ async function changeRole(userId) {
     body: JSON.stringify({ role }),
   });
   const data = await res.json();
-  if (res.ok) { alert(`✓ ${data.message}`); loadUsers(); }
-  else { alert(`✗ Gagal: ${data.error}`); }
+  if (res.ok) {
+    if (data.newToken) { token = data.newToken; currentUser = data.user; renderSidebar(); }
+    const note = (userId !== currentUser.id)
+      ? '\n\n⚠️ User yang diubah perlu LOGIN ULANG agar perubahan berlaku di sesi mereka.'
+      : '';
+    alert(`✓ ${data.message}${note}`);
+    loadUsers();
+  }
 }
 
 async function changeAbac(userId, type) {
   let body = {};
-
   if (type === 'dept') {
     const allDepts = ['IT', 'Finance', 'HR', 'General', 'Marketing'];
     const selected = allDepts.filter(d => document.getElementById(`dept-${userId}-${d}`)?.checked);
@@ -1214,15 +1228,20 @@ async function changeAbac(userId, type) {
   } else if (type === 'clearance') {
     body = { clearanceLevel: document.getElementById(`clearance-${userId}`).value };
   }
-
   const res = await fetch(`${API}/api/users/${userId}/abac`, {
     method:'PATCH',
     headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json' },
     body: JSON.stringify(body),
   });
   const data = await res.json();
-  if (res.ok) { alert(`✓ ${data.message}`); loadUsers(); }
-  else { alert(`✗ Gagal: ${data.error}`); }
+  if (res.ok) {
+    if (data.newToken) { token = data.newToken; currentUser = data.user; renderSidebar(); }
+    const note = (userId !== currentUser.id)
+      ? '\n\n⚠️ User yang diubah perlu LOGIN ULANG agar perubahan berlaku di sesi mereka.'
+      : '';
+    alert(`✓ ${data.message}${note}`);
+    loadUsers();
+  }
 }
 
 // ============================================================

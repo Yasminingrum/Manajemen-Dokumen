@@ -131,4 +131,29 @@ router.post('/logout', authenticate, (req, res) => {
   res.json({ message: 'Logged out successfully' });
 });
 
+// ============================================================
+// GET /api/auth/refresh — Perbarui token dengan data terkini
+// Dipanggil otomatis saat app dibuka agar role/dept/clearance
+// selalu sinkron dengan data di database
+// ============================================================
+router.get('/refresh', authenticate, (req, res) => {
+  const { users } = require('../data/store');
+  const user = users.find(u => u.id === req.user.id);
+  if (!user || !user.isActive) {
+    return res.status(401).json({ error: 'User tidak ditemukan atau tidak aktif' });
+  }
+  const newToken = generateToken(user);
+  return res.json({
+    token: newToken,
+    user: {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      department: user.department,
+      clearanceLevel: user.clearanceLevel,
+    },
+  });
+});
+
 module.exports = router;
