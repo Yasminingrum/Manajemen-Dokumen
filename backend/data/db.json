@@ -38,13 +38,13 @@
       "username": "viewer",
       "email": "viewer@company.com",
       "password": "$2b$10$tlRFOfiyOh2/6JVAk7Nxze2zl1YTzemH7BUBH37C2ytxS5IPrUPPG",
-      "role": "VIEWER",
-      "department": "General",
+      "role": "STAFF",
+      "department": "IT",
       "clearanceLevel": "PUBLIC",
       "isActive": true,
       "createdAt": "2024-02-10",
       "departments": [
-        "General"
+        "IT"
       ]
     },
     {
@@ -68,6 +68,19 @@
       "clearanceLevel": "CONFIDENTIAL",
       "isActive": true,
       "createdAt": "2024-03-10"
+    },
+    {
+      "id": "oauth_3e7464e0",
+      "username": "Titi Yasminingrum",
+      "email": "tyasminingrum@student.ciputra.ac.id",
+      "password": null,
+      "role": "VIEWER",
+      "department": "General",
+      "clearanceLevel": "PUBLIC",
+      "isActive": true,
+      "authProvider": "google",
+      "googleId": "115844604103544571404",
+      "createdAt": "2026-04-24"
     }
   ],
   "documents": [
@@ -136,7 +149,35 @@
       "ownerName": "admin",
       "createdAt": "2024-03-15",
       "updatedAt": "2024-03-15"
+    },
+    {
+      "id": "d007_fcd9",
+      "title": "IT",
+      "content": "Bikin dulu",
+      "department": "IT",
+      "classification": "CONFIDENTIAL",
+      "ownerId": "u004",
+      "ownerName": "viewer",
+      "createdAt": "2026-04-24",
+      "updatedAt": "2026-04-24"
     }
   ],
-  "delegations": []
+  "delegations": [
+    {
+      "id": "del_1777023680745",
+      "fromUserId": "u005",
+      "fromUsername": "manager_it",
+      "fromDept": "IT",
+      "toUserId": "u002",
+      "toUsername": "manager_finance",
+      "toDept": "Finance",
+      "delegatedDept": "IT",
+      "startDate": "2026-04-24",
+      "endDate": "2026-05-01",
+      "reason": "cuti",
+      "isActive": true,
+      "createdAt": "2026-04-24T09:41:20.745Z",
+      "createdBy": "admin"
+    }
+  ]
 }

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { users, delegations, addLog } = require('../data/store');
+const { users, delegations, addLog, saveDB } = require('../data/store');
 const { authenticate } = require('../middleware/auth');
 
 // ============================================================
@@ -16,7 +16,6 @@ router.get('/', authenticate, (req, res) => {
 
 // ============================================================
 // POST /api/delegation — Buat delegasi (ADMIN only)
-// Hanya mendelegasikan DEPARTMENT, bukan clearance
 // ============================================================
 router.post('/', authenticate, (req, res) => {
   const user = req.user;
@@ -40,7 +39,6 @@ router.post('/', authenticate, (req, res) => {
   if (!toUser) return res.status(404).json({ error: 'User tujuan tidak ditemukan' });
   if (fromUserId === toUserId) return res.status(400).json({ error: 'User asal dan tujuan tidak boleh sama' });
 
-  // Cek duplikat delegasi aktif untuk kombinasi yang sama
   const existing = delegations.find(d =>
     d.fromUserId === fromUserId &&
     d.toUserId === toUserId &&
@@ -60,8 +58,7 @@ router.post('/', authenticate, (req, res) => {
     toUserId,
     toUsername: toUser.username,
     toDept: toUser.department,
-    delegatedDept,        // hanya department yang didelegasikan
-    // clearance TIDAK didelegasikan — toUser tetap pakai clearance aslinya
+    delegatedDept,
     startDate,
     endDate,
     reason,
@@ -71,6 +68,10 @@ router.post('/', authenticate, (req, res) => {
   };
 
   delegations.push(delegation);
+
+  // Simpan ke file agar tidak hilang saat restart
+  saveDB();
+
   addLog(user.id, user.username, 'CREATE_DELEGATION',
     `${fromUser.username} → ${toUser.username} (dept: ${delegatedDept})`,
     'ALLOWED',
@@ -100,6 +101,9 @@ router.delete('/:id', authenticate, (req, res) => {
   delegation.isActive = false;
   delegation.revokedAt = new Date().toISOString();
   delegation.revokedBy = user.username;
+
+  // Simpan ke file agar tidak hilang saat restart
+  saveDB();
 
   addLog(user.id, user.username, 'REVOKE_DELEGATION', `DELEGATION:${delegation.id}`, 'ALLOWED',
     `Delegasi dept ${delegation.delegatedDept} dari ${delegation.fromUsername} ke ${delegation.toUsername} dicabut`);
